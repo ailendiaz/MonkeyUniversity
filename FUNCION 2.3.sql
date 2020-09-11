@@ -54,7 +54,7 @@ On I.ID=C.IDInscripcion
 
 
 -- (13)  Listado con el nombre del país y la cantidad de usuarios de cada país.
-Select P.Nombre, count (DAT.ID) as UsuarioPais From Paises as P
+Select  P.Nombre, count (DAT.ID) as UsuarioPais From Paises as P
 Left Join Datos_Personales as DAT
 On P.ID=DAT.IDPais 
 Group by P.Nombre
@@ -159,13 +159,19 @@ Group by C.Nombre, C.costocurso, C.costocertificacion
 having count (I.IDUsuario) <5 
 
 -- 24  Listado con Nombre del curso, fecha de estreno y nombre del nivel del curso que más recaudó en concepto de certificaciones.
-Select C.Nombre, C.Estreno, N.Nombre as NombreNivel, max (C.costocertificacion) From Cursos as C
+Select Top 1 C.Nombre, C.Estreno, N.Nombre as NombreNivel, sum (C.costocertificacion) as Recaudacion From Cursos as C
 Inner Join Niveles as N
-On C.IDNivel= N.ID ------dudad--------
+On C.IDNivel= N.ID 
+Group by C.Nombre, C.Estreno, N.Nombre
 
 
 -- 25  Listado con Nombre del idioma del idioma más utilizado como subtítulo.
-
+Select top 1 max (I.Nombre) as IdiomaMasUtilizado From Idiomas as I
+Inner join Idiomas_x_Curso as IXC
+On I.ID= IXC.IDIdioma
+Inner Join TiposIdioma as TI
+On IXC.IDTipo= TI.ID
+Group by I.Nombre
 
 -- 26  Listado con Nombre del curso y promedio de puntaje de reseñas apropiadas.
 Select C.Nombre, AVG (R.puntaje) as Promedio From Cursos as C
@@ -176,16 +182,48 @@ On I.ID= R.IDInscripcion
 Group by C.Nombre
 
 
-
 -- 27  Listado con Nombre de usuario y la cantidad de reseñas inapropiadas que registró.
+Select U.NombreUsuario, count (R.Inapropiada) as ReseInapropiada From Usuarios as U
+Inner Join Inscripciones as I
+On U.ID=I.IDCurso
+Inner Join Reseñas as R
+On I.ID = R.IDInscripcion
+Group by U.NombreUsuario
+
 
 -- 28  Listado con Nombre del curso, nombre y apellidos de usuarios y la cantidad de veces que dicho usuario realizó dicho curso.
 -- No mostrar cursos y usuarios que contabilicen cero.
 
+Select C.Nombre as NombreCurso, DAT.Nombres+DAT.Apellidos as NombreyApellido, count (U.ID) as UsuarioCurso From Cursos as C
+Inner Join Inscripciones as I
+On C.ID = I.IDCurso
+Inner Join Usuarios as U
+On I.IDUsuario= U.ID
+Inner Join Datos_Personales as DAT
+On U.ID= DAT.ID
+Group by C.Nombre, DAT.Nombres+DAT.Apellidos
+
+
 -- 29  Listado con Apellidos y nombres, mail y duración total en concepto de clases de cursos a los que se haya inscripto.
 -- Sólo listar información de aquellos registros cuya duración total supere los 400 minutos.
 
+Select DAT.Apellidos+DAT.Nombres as ApellidoYNombre, DAT.email, Sum (CC.duracion) as DuracionTotal From Datos_Personales as DAT
+Inner Join Usuarios as U
+On DAT.ID = U.ID
+Join Inscripciones as I
+On U.ID = I.IDUsuario
+Join Cursos as C
+On I.IDCurso = C.ID
+Join Clases as CC
+On C.ID= CC.IDCurso
+Group by DAT.Apellidos+DAT.Nombres, DAT.email
+Having Sum (CC.Duracion) > 400
+
 -- 30  Listado con nombre del curso y recaudación total. La recaudación total consiste en la sumatoria de costos de inscripción y
 --de certificación. Listarlos ordenados de mayor a menor por recaudación.
+
+Select C.Nombre, sum (C.costocurso+C.costocertificacion) as RecaudacionTotal From Cursos as C
+Group by C.Nombre
+Order by RecaudacionTotal desc
 
 
